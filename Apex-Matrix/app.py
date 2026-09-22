@@ -7,7 +7,7 @@ st.markdown("Enter property financials to generate a Presidential-Tier HVII Scor
 
 with st.sidebar:
     st.header("Authentication")
-    api_key = st.text_input("Enter License Key (API Key)", type="password")
+    api_key = st.text_input("Enter License Key (API Key)", type="password", value="sk_apex_live_12345")
 
 col1, col2 = st.columns(2)
 
@@ -29,9 +29,9 @@ with col2:
     depreciation = st.number_input("Depreciation Benefit Multiplier", value=1.45)
     
     st.markdown("### Heuristics")
-    expertise = st.checkbox("Sector Expertise Bonus")
-    contrarian = st.checkbox("Contrarian Play Bonus")
-    systematic = st.checkbox("Systematic Model Bonus")
+    expertise = st.checkbox("Sector Expertise Bonus", value=True)
+    contrarian = st.checkbox("Contrarian Play Bonus", value=True)
+    systematic = st.checkbox("Systematic Model Bonus", value=True)
 
 if st.button("Generate Asset Report"):
     if not api_key:
@@ -55,8 +55,6 @@ if st.button("Generate Asset Report"):
         }
         
         headers = {"X-Apex-API-Key": api_key}
-        
-        # Pointing directly to your live backend URL on Render
         backend_url = "https://apex-hvii-matrix.onrender.com/api/v1/evaluate"
         
         try:
@@ -67,6 +65,7 @@ if st.button("Generate Asset Report"):
                 st.success(f"Verdict: {result['verdict']}")
                 st.metric("HVII Index Score", result['hvii_index'])
                 st.metric("Stress-Tested Annual Cash Flow", f"${result['stress_tested_cash_flow']:,.2f}")
+                st.text(f"Risk Profile: {result['risk_profile']}")
             else:
                 st.error(f"Server Error ({response.status_code}): {response.text}")
         except Exception as e:
