@@ -96,31 +96,7 @@ class HighValueInvestorGem:
             "projected_5yr_irr_pct": round(approx_irr, 2),
             "equity_multiple": round(equity_multiple, 2),
             "monte_carlo_success_probability": f"{probability_of_profit:.1f}%",
+            "stress_tested_cash_flow": round(net_cash_flow, 2),
             "verdict": verdict,
             "risk_profile": "High Friction/High Reward" if friction_factor > 0.7 else "Efficient/Stable"
         }
-
-if __name__ == "__main__":
-    gem_engine = HighValueInvestorGem()
-    
-    commercial_rehab_project = {
-        "asset_name": "Industrial Warehouse Expansion & Structural Refit",
-        "purchase_price": 1250000.0,
-        "intrinsic_value": 1600000.0, 
-        "down_payment": 250000.0,
-        "monthly_gross_income": 22000.0,
-        "monthly_expenses": 4500.0,
-        "debt_interest_rate": 0.075,
-        "expected_annual_appreciation": 0.04,
-        "market_liquidity_score": 4.0, 
-        "project_complexity_score": 6.5, 
-        "depreciation_benefit_multiplier": 1.45, 
-        "sector_expertise": True,     
-        "is_contrarian_play": True,    
-        "systematic_model": True       
-    }
-
-    results = gem_engine.evaluate_asset(commercial_rehab_project)
-    print("--- Running Presidential Matrix ---")
-    for k, v in results.items():
-        print(f"{k.replace('_', ' ').title()}: {v}")
