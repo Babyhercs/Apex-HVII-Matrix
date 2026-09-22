@@ -3,10 +3,10 @@ from typing import Dict, Any
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
-# 1. Initialize the Web Application
+# 1. Initialize Web App
 app = FastAPI(title="Apex HVII Property Matrix API")
 
-# 2. Define the Expected JSON Input
+# 2. Define Data Schema
 class PropertyData(BaseModel):
     asset_name: str = Field(..., description="Name or address of the asset")
     purchase_price: float = Field(..., gt=0)
@@ -87,7 +87,7 @@ class HighValueInvestorGem:
 
 gem_engine = HighValueInvestorGem()
 
-# 4. Routing the Web Traffic
+# 4. Web Endpoints
 @app.get("/")
 def root():
     return {"status": "online", "system": "Apex HVII Engine"}
