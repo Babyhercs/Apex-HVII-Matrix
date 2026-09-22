@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- CORE UNDERWRITING ENGINE (Embedded to prevent import errors) ---
+# --- CORE UNDERWRITING ENGINE ---
 class HighValueInvestorGem:
     def __init__(self, investor_profile: str = "Presidential Aggressive"):
         self.profile = investor_profile
@@ -73,6 +73,11 @@ class HighValueInvestorGem:
         
         return {
             "asset_name": asset_metadata.get("asset_name"),
+            "purchase_price": price,
+            "intrinsic_value": intrinsic_value,
+            "down_payment": down_payment,
+            "debt_interest_rate": asset_metadata.get("debt_interest_rate"),
+            "expected_annual_appreciation": appreciation,
             "hvii_index": round(hvii, 2),
             "stress_tested_cash_flow": round(net_cash_flow, 2),
             "verdict": verdict,
@@ -168,6 +173,7 @@ if app_choice == "🏢 Commercial Real Estate (HVII Matrix)":
         
         data = engine.evaluate_asset(payload)
         st.session_state.last_evaluation = data
+        st.session_state.last_payload = payload
         st.session_state.comparison_history.append(data)
         
         if data['verdict'] == "STRONG ACQUISITION TARGET":
@@ -200,6 +206,7 @@ if app_choice == "🏢 Commercial Real Estate (HVII Matrix)":
         df_sens = pd.DataFrame(sensitivity_flows)
         fig_sens = px.bar(df_sens, x="Interest Rate", y="Net Cash Flow ($)", color="Net Cash Flow ($)", color_continuous_scale="Viridis")
         st.plotly_chart(fig_sens, use_container_width=True)
+        st.session_state.last_sensitivity = sensitivity_flows
 
     if st.session_state.comparison_history:
         st.markdown("### 🗂️ Portfolio Comparison History")
@@ -210,21 +217,49 @@ if app_choice == "🏢 Commercial Real Estate (HVII Matrix)":
             st.rerun()
 
     if "last_evaluation" in st.session_state:
-        st.markdown("### 📄 Executive Export")
-        if st.button("Download Executive Underwriting Memo (PDF)"):
+        st.markdown("### 📄 Comprehensive Executive Export")
+        if st.button("Download Full Executive Underwriting Memo (PDF)"):
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", "B", 16)
             pdf.cell(200, 10, txt="Apex Development: Executive Underwriting Memo", ln=True, align="C")
-            pdf.set_font("Arial", "", 12)
-            pdf.ln(10)
+            pdf.set_font("Arial", "", 10)
+            pdf.cell(200, 8, txt="Complete Asset Evaluation, Cash Flow Projections, & Sensitivity Analysis", ln=True, align="C")
+            pdf.ln(5)
+            
+            # Section 1: Evaluation Metrics & Verdict
+            pdf.set_font("Arial", "B", 12)
+            pdf.cell(200, 8, txt="1. Core Underwriting Results", ln=True)
+            pdf.set_font("Arial", "", 10)
             eval_data = st.session_state.last_evaluation
             for k, v in eval_data.items():
-                pdf.cell(200, 10, txt=f"{k.replace('_', ' ').title()}: {v}", ln=True)
+                pdf.cell(200, 6, txt=f" - {k.replace('_', ' ').title()}: {v}", ln=True)
+            pdf.ln(5)
+
+            # Section 2: 10-Year Cash Flow Projections
+            pdf.set_font("Arial", "B", 12)
+            pdf.cell(200, 8, txt="2. 10-Year Cumulative Cash Flow Projections", ln=True)
+            pdf.set_font("Arial", "", 10)
+            base_cf = eval_data['stress_tested_cash_flow']
+            app_rate = st.session_state.last_payload.get('expected_annual_appreciation', 0.04)
+            for y in range(1, 11):
+                cum_val = base_cf * y * (1 + app_rate)**y
+                pdf.cell(200, 5, txt=f" Year {y}: ${cum_val:,.2f}", ln=True)
+            pdf.ln(5)
+
+            # Section 3: Interest Rate Sensitivity Matrix
+            pdf.set_font("Arial", "B", 12)
+            pdf.cell(200, 8, txt="3. Interest Rate Sensitivity Matrix", ln=True)
+            pdf.set_font("Arial", "", 10)
+            if "last_sensitivity" in st.session_state:
+                for row in st.session_state.last_sensitivity:
+                    pdf.cell(200, 5, txt=f" Rate: {row['Interest Rate']} | Net Cash Flow: ${row['Net Cash Flow ($)']:,.2f}", ln=True)
+            
             pdf_path = "Apex_Underwriting_Memo.pdf"
             pdf.output(pdf_path)
+            
             with open(pdf_path, "rb") as f:
-                st.download_button("Click here to download PDF file", f, file_name="Apex_Underwriting_Memo.pdf", mime="application/pdf")
+                st.download_button("Click here to download comprehensive PDF", f, file_name="Apex_Underwriting_Memo.pdf", mime="application/pdf")
 
 # =====================================================================
 # 2. WELDING & METAL FABRICATION MODULE
@@ -286,4 +321,4 @@ elif app_choice == "📈 TradingView / FXIFY Prop Bot":
 # =====================================================================
 elif app_choice == "❓ How Everything Works (Guide)":
     st.title("❓ Apex Ecosystem: Master User Guide")
-    st.markdown("All enterprise modules are unified in `app.py`, gated by Gumroad subscriptions, and equipped with live Plotly analytics and PDF export utilities.")
+    st.markdown("All enterprise modules are unified in `app.py`, gated by Gumroad subscriptions, and equipped with live Plotly analytics and full PDF reporting.")
