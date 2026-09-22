@@ -32,7 +32,7 @@ if "lead_submissions" not in st.session_state:
     st.session_state.lead_submissions = []
 
 # =====================================================================
-# PUBLIC LEAD CAPTURE MODE
+# PUBLIC LEAD CAPTURE MODE (WITH AUTOMATED LEAD SCORING)
 # =====================================================================
 if portal_mode == "🌐 Free Public Property Intake Form":
     st.title("🌐 Apex Development: Free Commercial Property Feasibility Check")
@@ -60,9 +60,21 @@ if portal_mode == "🌐 Free Public Property Intake Form":
         submitted = st.form_submit_button("Submit for Instant Feasibility Score", type="primary")
         
         if submitted:
-            net_mo = (pub_gross - pub_expenses) * (1 - (pub_complexity * 0.02))
-            annual_net = net_mo * 12
-            prelim_yield = (annual_net / pub_purchase) * 100 if pub_purchase > 0 else 0
+            engine = HighValueInvestorGem()
+            payload = {
+                "asset_name": asset_address,
+                "purchase_price": pub_purchase,
+                "intrinsic_value": pub_purchase * 1.25,
+                "down_payment": pub_purchase * 0.20,
+                "monthly_gross_income": pub_gross,
+                "monthly_expenses": pub_expenses,
+                "debt_interest_rate": 0.075,
+                "expected_annual_appreciation": 0.04,
+                "market_liquidity_score": 5.0,
+                "project_complexity_score": pub_complexity,
+                "depreciation_benefit_multiplier": 1.30,
+            }
+            res = engine.evaluate_asset(payload)
             
             lead_record = {
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -71,12 +83,17 @@ if portal_mode == "🌐 Free Public Property Intake Form":
                 "phone": client_phone,
                 "property": asset_address,
                 "purchase_price": pub_purchase,
-                "estimated_yield": round(prelim_yield, 2)
+                "lead_score": res["lead_score"],
+                "lead_priority": res["lead_priority"],
+                "verdict": res["verdict"]
             }
             st.session_state.lead_submissions.append(lead_record)
             
             st.success("✅ Feasibility Request Received! Our underwriting team will review your metrics and reach out shortly.")
-            st.metric("Preliminary Net Yield Estimate", f"{prelim_yield:.2f}%")
+            
+            col_m1, col_m2 = st.columns(2)
+            col_m1.metric("Lead Priority Triage", res["lead_priority"])
+            col_m2.metric("Calculated Lead Score", f"{res['lead_score']} / 100")
             
     st.stop()
 
@@ -120,7 +137,7 @@ app_choice = st.sidebar.selectbox(
 # =====================================================================
 if app_choice == "🏢 Commercial Real Estate (HVII Matrix)":
     st.title("🏢 Apex Development: Commercial Real Estate Underwriting")
-    st.markdown("Institutional underwriting with DSCR, Cap Rate, Monte Carlo Risk Simulation, 5-Yr IRR, and Executive Reporting.")
+    st.markdown("Institutional underwriting with DSCR, Cap Rate, Monte Carlo Risk Simulation, 5-Yr IRR, Lead Scoring, and Executive Reporting.")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -178,7 +195,7 @@ if app_choice == "🏢 Commercial Real Estate (HVII Matrix)":
         r4.metric("DSCR Ratio", f"{data['dscr']}x")
         r5.metric("5-Yr Projected IRR", f"{data['projected_5yr_irr_pct']}%")
         r6.metric("Equity Multiple", f"{data['equity_multiple']}x")
-        r7.metric("Monte Carlo Success", data['monte_carlo_success_probability'])
+        r7.metric("Lead Score", f"{data['lead_score']} / 100")
 
         st.markdown("### 📈 10-Year Cumulative Cash Flow Projections")
         years = list(range(1, 11))
@@ -311,13 +328,24 @@ elif app_choice == "📈 TradingView / FXIFY Prop Bot":
 # 5. VIEW CAPTURED CLIENT LEADS (CRM)
 # =====================================================================
 elif app_choice == "📥 View Captured Client Leads":
-    st.title("📥 Apex CRM: Captured Client Leads")
-    st.markdown("Review prospective client property submissions captured from your public intake form.")
+    st.title("📥 Apex CRM: Captured Client Leads & Pipeline Triage")
+    st.markdown("Review prospective client property submissions captured from your public intake form, prioritized by institutional lead scoring.")
+    
     if st.session_state.lead_submissions:
         df_leads = pd.DataFrame(st.session_state.lead_submissions)
+        
+        total_leads = len(df_leads)
+        hot_leads = len(df_leads[df_leads["lead_priority"].str.contains("HOT", na=False)])
+        
+        m1, m2 = st.columns(2)
+        m1.metric("Total Captured Leads", total_leads)
+        m2.metric("Hot Priority Leads", hot_leads)
+        
         st.dataframe(df_leads, use_container_width=True)
+        
         csv_data = df_leads.to_csv(index=False).encode('utf-8')
-        st.download_button("Download Leads as CSV", csv_data, file_name="apex_client_leads.csv", mime="text/csv")
+        st.download_button("Download Leads Database as CSV", csv_data, file_name="apex_client_leads.csv", mime="text/csv")
+        
         if st.button("Clear Lead History"):
             st.session_state.lead_submissions = []
             st.rerun()
@@ -329,4 +357,4 @@ elif app_choice == "📥 View Captured Client Leads":
 # =====================================================================
 elif app_choice == "❓ How Everything Works (Guide)":
     st.title("❓ Apex Ecosystem: Master User Guide")
-    st.markdown("All institutional underwriting engines, IRR modeling, Monte Carlo simulations, and CRM lead capture forms are unified in `app.py` and powered by `matrix.py`.")
+    st.markdown("All institutional underwriting engines, IRR modeling, Monte Carlo simulations, automated lead scoring, and CRM lead capture forms are unified in `app.py` and powered by `matrix.py`.")
