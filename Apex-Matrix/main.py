@@ -3,8 +3,10 @@ from typing import Dict, Any
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
+# Initialize Web Server
 app = FastAPI(title="Apex HVII Property Matrix API")
 
+# Define Data Input Rules
 class PropertyData(BaseModel):
     asset_name: str = Field(..., description="Name or address of the asset")
     purchase_price: float = Field(..., gt=0)
@@ -21,6 +23,7 @@ class PropertyData(BaseModel):
     is_contrarian_play: bool = Field(default=False)
     systematic_model: bool = Field(default=False)
 
+# The Core Matrix
 class HighValueInvestorGem:
     def __init__(self, investor_profile: str = "Presidential Aggressive"):
         self.profile = investor_profile
@@ -77,13 +80,11 @@ class HighValueInvestorGem:
 
 gem_engine = HighValueInvestorGem()
 
+# API Endpoints
 @app.get("/")
 def root():
     return {"status": "online", "system": "Apex HVII Engine"}
 
-@app.post("/api/v1/evaluate")
-async def evaluate(data: PropertyData):
-    return gem_engine.evaluate_asset(data)
 @app.post("/api/v1/evaluate")
 async def evaluate(data: PropertyData):
     return gem_engine.evaluate_asset(data)
