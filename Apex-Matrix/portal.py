@@ -7,7 +7,7 @@ from matrix import HighValueInvestorGem
 
 st.set_page_config(
     page_title="Apex Ecosystem Enterprise Portal",
-    page_layout="wide"
+    layout="wide"
 )
 
 # --- CUSTOM EXECUTIVE CSS INJECTION ---
