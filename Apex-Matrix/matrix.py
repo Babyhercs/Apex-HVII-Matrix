@@ -5,8 +5,8 @@ from typing import Dict, Any
 class HighValueInvestorGem:
     """
     Presidential-Tier Analysis Engine: Evaluates assets via enterprise-grade 
-    risk assessment, tax-efficiency modeling, DSCR, Cap Rate, 5-Year IRR, 
-    and Automated Lead Scoring for client acquisition.
+    risk assessment, tax-efficiency modeling, project friction variables, 
+    Monte Carlo probability stress-testing, DSCR, Cap Rate, and 5-Year DCF IRR modeling.
     """
     
     def __init__(self, investor_profile: str = "Presidential Aggressive"):
@@ -87,13 +87,13 @@ class HighValueInvestorGem:
 
         verdict = "STRONG ACQUISITION TARGET" if hvii >= 7.5 and dscr >= 1.25 and approx_irr >= 15.0 else "HOLD / CONDITIONAL" if hvii >= 5.0 else "LIQUIDITY DRAIN"
         
-        # Automated Client Acquisition Lead Score (0 - 100 scale)
         lead_score = int(min(100, max(0, (hvii * 6) + (approx_irr * 1.5) + (dscr * 5))))
         lead_priority = "HOT LEAD (Immediate Outreach)" if lead_score >= 75 else "WARM LEAD (Nurture)" if lead_score >= 50 else "COLD / DISQUALIFIED"
 
         return {
             "asset_name": asset_metadata.get("asset_name"),
             "hvii_index": round(hvii, 2),
+            "stress_tested_cash_flow": round(net_cash_flow, 2), # Restored for legacy portal.py compatibility
             "net_operating_income": round(noi, 2),
             "cap_rate_pct": round(cap_rate, 2),
             "dscr": round(dscr, 2),
@@ -105,28 +105,4 @@ class HighValueInvestorGem:
             "verdict": verdict,
             "risk_profile": "High Friction/High Reward" if friction_factor > 0.7 else "Efficient/Stable"
         }
-
-if __name__ == "__main__":
-    gem_engine = HighValueInvestorGem()
-    
-    commercial_rehab_project = {
-        "asset_name": "Industrial Warehouse Expansion & Structural Refit",
-        "purchase_price": 1250000.0,
-        "intrinsic_value": 1600000.0, 
-        "down_payment": 250000.0,
-        "monthly_gross_income": 22000.0,
-        "monthly_expenses": 4500.0,
-        "debt_interest_rate": 0.075,
-        "expected_annual_appreciation": 0.04,
-        "market_liquidity_score": 4.0, 
-        "project_complexity_score": 6.5, 
-        "depreciation_benefit_multiplier": 1.45, 
-        "sector_expertise": True,     
-        "is_contrarian_play": True,    
-        "systematic_model": True       
-    }
-
-    results = gem_engine.evaluate_asset(commercial_rehab_project)
-    print("--- Running Presidential Matrix (Client Acquisition Upgraded) ---")
-    for k, v in results.items():
         print(f"{k.replace('_', ' ').title()}: {v}")
