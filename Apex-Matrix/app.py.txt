@@ -22,8 +22,67 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- MASTER AUTHENTICATION GATE ---
+# --- NAVIGATION HUB (INCLUDING PUBLIC LEAD MAGNET) ---
 st.sidebar.title("Apex Portal Access")
+portal_mode = st.sidebar.radio("Select Portal Mode", ["🔒 Subscriber Enterprise Portal", "🌐 Free Public Property Intake Form"])
+
+# Initialize Lead Capture History in Session State
+if "lead_submissions" not in st.session_state:
+    st.session_state.lead_submissions = []
+
+# =====================================================================
+# PUBLIC LEAD CAPTURE MODE (NO LICENSE KEY REQUIRED)
+# =====================================================================
+if portal_mode == "🌐 Free Public Property Intake Form":
+    st.title("🌐 Apex Development: Free Commercial Property Feasibility Check")
+    st.markdown("Submit your property metrics below for an instant preliminary underwriting score and direct consultation triage.")
+    
+    with st.form("lead_intake_form"):
+        st.markdown("### Client Contact Information")
+        col_c1, col_c2 = st.columns(2)
+        with col_c1:
+            client_name = st.text_input("Full Name", "John Doe")
+            client_email = st.text_input("Email Address", "john@example.com")
+        with col_c2:
+            client_phone = st.text_input("Phone Number", "(469) 000-0000")
+            asset_address = st.text_input("Property Address / Description", "123 Commercial Pkwy, Dallas, TX")
+
+        st.markdown("### Property Underwriting Parameters")
+        p1, p2 = st.columns(2)
+        with p1:
+            pub_purchase = st.number_input("Target Purchase Price ($)", value=1000000.0, step=10000.0)
+            pub_gross = st.number_input("Monthly Gross Income ($)", value=18000.0, step=500.0)
+        with p2:
+            pub_expenses = st.number_input("Monthly Operating Expenses ($)", value=3500.0, step=100.0)
+            pub_complexity = st.slider("Project Complexity / Rehab Scope (1-10)", 1.0, 10.0, 5.0)
+
+        submitted = st.form_submit_button("Submit for Instant Feasibility Score", type="primary")
+        
+        if submitted:
+            # Quick preliminary evaluation score calculation
+            net_mo = (pub_gross - pub_expenses) * (1 - (pub_complexity * 0.02))
+            annual_net = net_mo * 12
+            prelim_yield = (annual_net / pub_purchase) * 100 if pub_purchase > 0 else 0
+            
+            lead_record = {
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "name": client_name,
+                "email": client_email,
+                "phone": client_phone,
+                "property": asset_address,
+                "purchase_price": pub_purchase,
+                "estimated_yield": round(prelim_yield, 2)
+            }
+            st.session_state.lead_submissions.append(lead_record)
+            
+            st.success("✅ Feasibility Request Received! Our underwriting team will review your metrics and reach out shortly.")
+            st.metric("Preliminary Net Yield Estimate", f"{prelim_yield:.2f}%")
+            
+    st.stop() # Stops execution here so public users cannot access licensed modules
+
+# =====================================================================
+# MASTER AUTHENTICATION GATE FOR SUBSCRIBERS
+# =====================================================================
 license_key = st.sidebar.text_input("Enter Gumroad License Key", type="password")
 
 MASTER_ADMIN_KEY = os.getenv("APEX_MASTER_KEY", "sk_apex_live_12345")
@@ -34,7 +93,12 @@ if not VALID_ACCESS and license_key:
 
 if not VALID_ACCESS:
     st.title("⚡ Apex Ecosystem Portal")
-    st.warning("🔒 Please enter your active Apex Suite license key in the sidebar to access enterprise tools.")
+    st.warning("🔒 Please enter your active Apex Suite license key in the sidebar, or switch to the Public Intake Form mode.")
+    
+    # Optional: Display submitted leads for the admin/owner to review
+    if st.session_state.lead_submissions:
+        st.markdown("### 📥 Recent Public Lead Submissions")
+        st.dataframe(pd.DataFrame(st.session_state.lead_submissions), use_container_width=True)
     st.stop()
 
 st.sidebar.success("✅ Authorized Apex Member")
@@ -49,6 +113,7 @@ app_choice = st.sidebar.selectbox(
         "🔥 Structural Welding & Metal Fabrication", 
         "🪵 Custom Carpentry & Stage Builds",
         "📈 TradingView / FXIFY Prop Bot",
+        "📥 View Captured Client Leads",
         "❓ How Everything Works (Guide)"
     ]
 )
@@ -60,15 +125,6 @@ if app_choice == "🏢 Commercial Real Estate (HVII Matrix)":
     st.title("🏢 Apex Development: Commercial Real Estate Underwriting")
     st.markdown("Institutional underwriting, sensitivity modeling, and executive reporting.")
     
-    with st.expander("📋 Property Evaluation Checklist & Guide"):
-        st.markdown("""
-        - **Phase 1: Valuation & Capital Structure**: Verify purchase price $\le 80\%$ of intrinsic appraised value.
-        - **Phase 2: Income & Debt**: Audit gross rent rolls, operating expenses, and debt service.
-        - **Phase 3: Risk & Friction**: Assign market liquidity (1-10) and project complexity (1-10) scores.
-        - **Phase 4: Heuristics**: Apply Buffett, Lynch, Templeton, and Dalio multiplier overrides.
-        - **Phase 5: Verdict**: Target HVII Composite Index Score $\ge 7.5 / 10$.
-        """)
-
     col1, col2 = st.columns(2)
     with col1:
         asset_name = st.text_input("Asset Name / Description", "Industrial Warehouse Expansion & Structural Refit")
@@ -252,8 +308,23 @@ elif app_choice == "📈 TradingView / FXIFY Prop Bot":
     st.code("[2026-09-22 04:12:05] INFO: Received BUY signal for EURUSD | Vol: 1.50 | SL: 1.0820 | TP: 1.0950", language="text")
 
 # =====================================================================
-# 5. HOW EVERYTHING WORKS (GUIDE)
+# 5. VIEW CAPTURED CLIENT LEADS (ADMIN MODULE)
+# =====================================================================
+elif app_choice == "📥 View Captured Client Leads":
+    st.title("📥 Apex CRM: Captured Client Leads")
+    st.markdown("Review prospective client property submissions captured from your public intake form.")
+    if st.session_state.lead_submissions:
+        df_leads = pd.DataFrame(st.session_state.lead_submissions)
+        st.dataframe(df_leads, use_container_width=True)
+        if st.button("Clear Lead History"):
+            st.session_state.lead_submissions = []
+            st.rerun()
+    else:
+        st.info("No public leads captured yet. Switch to the 'Free Public Property Intake Form' mode in the sidebar to test submissions.")
+
+# =====================================================================
+# 6. HOW EVERYTHING WORKS (GUIDE)
 # =====================================================================
 elif app_choice == "❓ How Everything Works (Guide)":
     st.title("❓ Apex Ecosystem: Master User Guide")
-    st.markdown("All enterprise modules are unified in `app.py`, gated by Gumroad subscriptions, and equipped with live Plotly analytics and full PDF reporting.")
+    st.markdown("All enterprise modules and public lead-capture forms are unified in `app.py`.")Plotly analytics and full PDF reporting.")
