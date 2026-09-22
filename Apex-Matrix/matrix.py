@@ -5,8 +5,8 @@ from typing import Dict, Any
 class HighValueInvestorGem:
     """
     Presidential-Tier Analysis Engine: Evaluates assets via enterprise-grade 
-    risk assessment, tax-efficiency modeling, project friction variables, 
-    Monte Carlo probability stress-testing, DSCR, Cap Rate, and 5-Year DCF IRR modeling.
+    risk assessment, tax-efficiency modeling, DSCR, Cap Rate, 5-Year IRR, 
+    and Automated Lead Scoring for client acquisition.
     """
     
     def __init__(self, investor_profile: str = "Presidential Aggressive"):
@@ -14,40 +14,32 @@ class HighValueInvestorGem:
         self.kiyosaki_weight = 0.50
         self.schwab_weight = 0.50
         
-        # Elite Investor Heuristics (Multipliers)
         self.heuristics = {
-            "Buffett_Margin_Safety": 1.1,  # Bonus for buying below intrinsic value
-            "Soros_Macro_Stability": 1.05, # Bonus for low-risk zone assets
-            "Lynch_Expertise": 1.1,        # Bonus for high-conviction/experienced sectors
-            "Templeton_Contrarian": 1.05,  # Bonus for high-pessimism/undervalued plays
-            "Dalio_Systematic": 1.05       # Bonus for systematic/diversified models
+            "Buffett_Margin_Safety": 1.1,
+            "Soros_Macro_Stability": 1.05,
+            "Lynch_Expertise": 1.1,
+            "Templeton_Contrarian": 1.05,
+            "Dalio_Systematic": 1.05
         }
 
     def evaluate_asset(self, asset_metadata: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Runs a Presidential-grade matrix evaluation including tax/friction modeling,
-        DSCR, Cap Rate, Monte Carlo risk probabilities, and 5-Year DCF IRR.
-        """
         price = asset_metadata.get("purchase_price", 0.0)
         intrinsic_value = asset_metadata.get("intrinsic_value", price) 
         down_payment = asset_metadata.get("down_payment", price)
         debt_principal = price - down_payment
         
-        # 1. Stress Test: Bad-Case Scenario
         friction_factor = asset_metadata.get("project_complexity_score", 5.0) / 10.0
         bad_case_impact = 1 - (friction_factor * 0.20) 
         
         gross_annual_income = (asset_metadata.get("monthly_gross_income", 0.0) * 12) * bad_case_impact
         annual_expenses = asset_metadata.get("monthly_expenses", 0.0) * 12
         
-        # Institutional Real Estate Benchmarks
         noi = gross_annual_income - annual_expenses
         annual_debt_service = debt_principal * asset_metadata.get("debt_interest_rate", 0.0)
         net_cash_flow = noi - annual_debt_service
         dscr = (noi / annual_debt_service) if annual_debt_service > 0 else 99.9
         cap_rate = (noi / price) * 100 if price > 0 else 0.0
         
-        # 5-Year DCF, IRR, & Equity Multiple Estimation
         hold_period_years = 5
         appreciation = asset_metadata.get("expected_annual_appreciation", 0.04)
         exit_val = price * ((1 + appreciation) ** hold_period_years)
@@ -57,10 +49,7 @@ class HighValueInvestorGem:
         equity_multiple = total_cash_returned / down_payment if down_payment > 0 else 0.0
         approx_irr = ((equity_multiple ** (1 / hold_period_years)) - 1) * 100
 
-        # 2. Tax Efficiency Multiplier
         tax_shield = asset_metadata.get("depreciation_benefit_multiplier", 1.0)
-        
-        # 3. Kiyosaki Score
         cash_on_cash_return = (net_cash_flow / down_payment) if down_payment > 0 else 0.0
         kiyosaki_score = ((cash_on_cash_return * 10) * tax_shield)
         
@@ -71,7 +60,6 @@ class HighValueInvestorGem:
             
         kiyosaki_score = max(0.0, min(10.0, kiyosaki_score))
 
-        # 4. Schwab Score
         liquidity = asset_metadata.get("market_liquidity_score", 5.0)
         schwab_score = (liquidity * 0.4) + (appreciation * 100) - (friction_factor * 2)
         
@@ -82,14 +70,12 @@ class HighValueInvestorGem:
             
         schwab_score = max(0.0, min(10.0, schwab_score))
 
-        # 5. Composite HVII Index
         hvii = (kiyosaki_score * self.kiyosaki_weight) + (schwab_score * self.schwab_weight)
         if asset_metadata.get("systematic_model", False):
             hvii *= self.heuristics["Dalio_Systematic"]
             
         hvii = max(0.0, min(10.0, hvii))
         
-        # Monte Carlo Risk Simulation (1,000 iterations)
         success_count = 0
         iterations = 1000
         for _ in range(iterations):
@@ -101,6 +87,10 @@ class HighValueInvestorGem:
 
         verdict = "STRONG ACQUISITION TARGET" if hvii >= 7.5 and dscr >= 1.25 and approx_irr >= 15.0 else "HOLD / CONDITIONAL" if hvii >= 5.0 else "LIQUIDITY DRAIN"
         
+        # Automated Client Acquisition Lead Score (0 - 100 scale)
+        lead_score = int(min(100, max(0, (hvii * 6) + (approx_irr * 1.5) + (dscr * 5))))
+        lead_priority = "HOT LEAD (Immediate Outreach)" if lead_score >= 75 else "WARM LEAD (Nurture)" if lead_score >= 50 else "COLD / DISQUALIFIED"
+
         return {
             "asset_name": asset_metadata.get("asset_name"),
             "hvii_index": round(hvii, 2),
@@ -110,7 +100,8 @@ class HighValueInvestorGem:
             "projected_5yr_irr_pct": round(approx_irr, 2),
             "equity_multiple": round(equity_multiple, 2),
             "monte_carlo_success_probability": f"{probability_of_profit:.1f}%",
-            "stress_tested_cash_flow": round(net_cash_flow, 2),
+            "lead_score": lead_score,
+            "lead_priority": lead_priority,
             "verdict": verdict,
             "risk_profile": "High Friction/High Reward" if friction_factor > 0.7 else "Efficient/Stable"
         }
@@ -136,6 +127,6 @@ if __name__ == "__main__":
     }
 
     results = gem_engine.evaluate_asset(commercial_rehab_project)
-    print("--- Running Presidential Matrix (Fully Upgraded) ---")
+    print("--- Running Presidential Matrix (Client Acquisition Upgraded) ---")
     for k, v in results.items():
         print(f"{k.replace('_', ' ').title()}: {v}")
