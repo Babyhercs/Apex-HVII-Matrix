@@ -1,100 +1,60 @@
-import math
-from typing import Dict, Any
-from fastapi import FastAPI
-from pydantic import BaseModel, Field
+import streamlit as st
+import requests
 
-# 1. Initialize FastAPI Web App
-app = FastAPI(title="Apex HVII Property Matrix API")
+st.set_page_config(page_title="Apex HVII Matrix", layout="wide")
+st.title("Apex Real Estate Evaluation Matrix")
+st.markdown("Enter property financials to generate a Presidential-Tier HVII Score.")
 
-# 2. Define Data Validation Schema
-class PropertyData(BaseModel):
-    asset_name: str = Field(..., description="Name or address of the asset")
-    purchase_price: float = Field(..., gt=0)
-    intrinsic_value: float = Field(..., gt=0)
-    down_payment: float = Field(..., ge=0)
-    monthly_gross_income: float = Field(..., ge=0)
-    monthly_expenses: float = Field(..., ge=0)
-    debt_interest_rate: float = Field(..., ge=0)
-    expected_annual_appreciation: float = Field(..., ge=0)
-    market_liquidity_score: float = Field(..., ge=1, le=10)
-    project_complexity_score: float = Field(..., ge=1, le=10)
-    depreciation_benefit_multiplier: float = Field(default=1.0)
-    sector_expertise: bool = Field(default=False)
-    is_contrarian_play: bool = Field(default=False)
-    systematic_model: bool = Field(default=False)
+with st.sidebar:
+    st.header("Authentication")
+    api_key = st.text_input("Enter License Key (API Key)", type="password")
 
-# 3. High Value Investor Gem Matrix
-class HighValueInvestorGem:
-    def __init__(self, investor_profile: str = "Presidential Aggressive"):
-        self.profile = investor_profile
-        self.kiyosaki_weight = 0.50
-        self.schwab_weight = 0.50
-        self.heuristics = {
-            "Buffett_Margin_Safety": 1.1,
-            "Soros_Macro_Stability": 1.05,
-            "Lynch_Expertise": 1.1,
-            "Templeton_Contrarian": 1.05,
-            "Dalio_Systematic": 1.05
+col1, col2 = st.columns(2)
+
+with col1:
+    st.subheader("Financials")
+    asset_name = st.text_input("Asset Name", "Industrial Warehouse Expansion")
+    purchase_price = st.number_input("Purchase Price ($)", value=1250000.0)
+    intrinsic_value = st.number_input("Intrinsic Value ($)", value=1600000.0)
+    down_payment = st.number_input("Down Payment ($)", value=250000.0)
+    gross_income = st.number_input("Monthly Gross Income ($)", value=22000.0)
+    expenses = st.number_input("Monthly Expenses ($)", value=4500.0)
+    interest_rate = st.number_input("Debt Interest Rate (Decimal)", value=0.075)
+
+with col2:
+    st.subheader("Risk & Friction Matrix")
+    appreciation = st.number_input("Expected Annual Appreciation (Decimal)", value=0.04)
+    liquidity = st.slider("Market Liquidity Score (1-10)", 1.0, 10.0, 4.0)
+    complexity = st.slider("Project Complexity (1-10)", 1.0, 10.0, 6.5)
+    depreciation = st.number_input("Depreciation Benefit Multiplier", value=1.45)
+    
+    st.markdown("### Heuristics")
+    expertise = st.checkbox("Sector Expertise Bonus")
+    contrarian = st.checkbox("Contrarian Play Bonus")
+    systematic = st.checkbox("Systematic Model Bonus")
+
+if st.button("Generate Asset Report"):
+    if not api_key:
+        st.error("Please enter your License Key in the sidebar.")
+    else:
+        payload = {
+            "asset_name": asset_name, "purchase_price": purchase_price,
+            "intrinsic_value": intrinsic_value, "down_payment": down_payment,
+            "monthly_gross_income": gross_income, "monthly_expenses": expenses,
+            "debt_interest_rate": interest_rate, "expected_annual_appreciation": appreciation,
+            "market_liquidity_score": liquidity, "project_complexity_score": complexity,
+            "depreciation_benefit_multiplier": depreciation, "sector_expertise": expertise,
+            "is_contrarian_play": contrarian, "systematic_model": systematic
         }
-
-    def evaluate_asset(self, data: PropertyData) -> Dict[str, Any]:
-        price = data.purchase_price
-        intrinsic_value = data.intrinsic_value
-        down_payment = data.down_payment
-        debt_principal = price - down_payment
         
-        # 1. Stress Test: Bad-Case Scenario
-        friction_factor = data.project_complexity_score / 10.0
-        bad_case_impact = 1 - (friction_factor * 0.20)
+        headers = {"X-Apex-API-Key": api_key}
+        response = requests.post("http://localhost:8000/api/v1/evaluate", json=payload, headers=headers)
         
-        gross_annual_income = (data.monthly_gross_income * 12) * bad_case_impact
-        annual_expenses = data.monthly_expenses * 12
-        annual_debt_service = debt_principal * data.debt_interest_rate
-        net_cash_flow = (gross_annual_income - annual_expenses) - annual_debt_service
-        
-        # 2. Tax Efficiency & Kiyosaki Score
-        cash_on_cash_return = (net_cash_flow / down_payment) if down_payment > 0 else 0.0
-        kiyosaki_score = ((cash_on_cash_return * 10) * data.depreciation_benefit_multiplier)
-        
-        if price <= (intrinsic_value * 0.8):
-            kiyosaki_score *= self.heuristics["Buffett_Margin_Safety"]
-        if data.sector_expertise:
-            kiyosaki_score *= self.heuristics["Lynch_Expertise"]
-            
-        kiyosaki_score = max(0.0, min(10.0, kiyosaki_score))
-
-        # 3. Schwab Score
-        schwab_score = (data.market_liquidity_score * 0.4) + (data.expected_annual_appreciation * 100) - (friction_factor * 2)
-        
-        if data.is_contrarian_play:
-            schwab_score *= self.heuristics["Templeton_Contrarian"]
-            
-        schwab_score = max(0.0, min(10.0, schwab_score))
-
-        # 4. Composite HVII Index
-        hvii = (kiyosaki_score * self.kiyosaki_weight) + (schwab_score * self.schwab_weight)
-        
-        if data.systematic_model:
-            hvii *= self.heuristics["Dalio_Systematic"]
-            
-        hvii = max(0.0, min(10.0, hvii))
-        verdict = "STRONG ACQUISITION TARGET" if hvii >= 7.5 else "HOLD / CONDITIONAL" if hvii >= 5.0 else "LIQUIDITY DRAIN"
-        
-        return {
-            "asset_name": data.asset_name,
-            "hvii_index": round(hvii, 2),
-            "stress_tested_cash_flow": round(net_cash_flow, 2),
-            "verdict": verdict,
-            "risk_profile": "High Friction/High Reward" if friction_factor > 0.7 else "Efficient/Stable"
-        }
-
-gem_engine = HighValueInvestorGem()
-
-# 4. API Endpoints
-@app.get("/")
-def root():
-    return {"status": "online", "system": "Apex HVII Engine"}
-
-@app.post("/api/v1/evaluate")
-async def evaluate(data: PropertyData):
-    return gem_engine.evaluate_asset(data)
+        if response.status_code == 200:
+            result = response.json()
+            st.success(f"Verdict: {result['verdict']}")
+            st.metric("HVII Index Score", result['hvii_index'])
+            st.metric("Stress-Tested Annual Cash Flow", f"${result['stress_tested_annual_cash_flow']:,.2f}")
+            st.metric("Cash on Cash Return", f"{result['cash_on_cash_return_pct']}%")
+        else:
+            st.error("Invalid API Key or Server Error.")
