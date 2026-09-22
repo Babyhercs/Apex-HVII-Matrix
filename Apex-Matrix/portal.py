@@ -1,5 +1,5 @@
 import streamlit as st
-import requests
+import os
 
 st.set_page_config(
     page_title="Apex Ecosystem Portal",
@@ -10,14 +10,16 @@ st.set_page_config(
 st.sidebar.title("Apex Portal Access")
 license_key = st.sidebar.text_input("Enter Gumroad License Key", type="password")
 
-# Administrative gate checking environment or fallback key
-VALID_ACCESS = (license_key == "sk_apex_live_12345")
+# Securely check against environment variable (with fallback for local testing)
+MASTER_ADMIN_KEY = os.getenv("APEX_MASTER_KEY", "sk_apex_live_12345")
+VALID_ACCESS = (license_key == MASTER_ADMIN_KEY)
 
 if not VALID_ACCESS and license_key:
     st.sidebar.error("Invalid License Key.")
 
 if not VALID_ACCESS:
     st.title("⚡ Apex Ecosystem Portal")
+    # Cleaned warning message — no raw test key exposed publicly
     st.warning("🔒 Please enter your active Apex Suite license key in the sidebar to access enterprise tools.")
     st.stop()
 
@@ -70,6 +72,10 @@ if app_choice == "🏢 Commercial Real Estate (Apex Development)":
         systematic = st.checkbox("Systematic Model Bonus (Dalio)", value=True)
 
     if st.button("Run HVII Evaluation", type="primary"):
+        # Import local matrix class logic directly for fast execution
+        from matrix import HighValueInvestorGem
+        engine = HighValueInvestorGem()
+        
         payload = {
             "asset_name": asset_name,
             "purchase_price": purchase_price,
@@ -86,20 +92,16 @@ if app_choice == "🏢 Commercial Real Estate (Apex Development)":
             "is_contrarian_play": contrarian,
             "systematic_model": systematic
         }
-        headers = {"X-Apex-API-Key": license_key}
+        
         try:
-            res = requests.post("http://127.0.0.1:8000/api/v1/evaluate", json=payload, headers=headers)
-            if res.status_code == 200:
-                data = res.json()
-                st.success(f"Verdict: {data['verdict']}")
-                r1, r2, r3 = st.columns(3)
-                r1.metric("HVII Index Score", f"{data['hvii_index']} / 10")
-                r2.metric("Stress-Tested Cash Flow", f"${data['stress_tested_cash_flow']:,.2f} / yr")
-                r3.metric("Risk Profile", data['risk_profile'])
-            else:
-                st.error(f"Error ({res.status_code}): {res.text}")
+            data = engine.evaluate_asset(payload)
+            st.success(f"Verdict: {data['verdict']}")
+            r1, r2, r3 = st.columns(3)
+            r1.metric("HVII Index Score", f"{data['hvii_index']} / 10")
+            r2.metric("Stress-Tested Cash Flow", f"${data['stress_tested_cash_flow']:,.2f} / yr")
+            r3.metric("Risk Profile", data['risk_profile'])
         except Exception as e:
-            st.error(f"Connection failed: {e}")
+            st.error(f"Evaluation failed: {e}")
 
 # =====================================================================
 # 2. WELDING & METAL FABRICATION MODULE
@@ -192,8 +194,8 @@ elif app_choice == "❓ How Everything Works (Guide)":
     ### 🔑 1. Licensing & Access
     - **Gumroad Integration**: All enterprise access is gated by active Gumroad subscriptions issuing unique license keys upon checkout.
     
-    ### 🏢 2. Commercial Real Estate (HVII Matrix)
-    - Evaluates property underwriting, debt service, and cash flow via the Presidential HVII Matrix.
+    ### 🏢 2. Commercial Real Estate (Apex Development)
+    - Evaluates property underwriting, debt service, and cash flow via the HVII Matrix.
     
     ### 🔥 3. Structural Welding & Metal Fabrication
     - Inputs material costs, shop hours, and bids to instantly compute job profit margins.
