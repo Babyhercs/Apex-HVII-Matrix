@@ -3,10 +3,10 @@ from typing import Dict, Any
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
-# Initialize Web Server
+# 1. Initialize the Web Application
 app = FastAPI(title="Apex HVII Property Matrix API")
 
-# Define Data Input Rules
+# 2. Define the Expected JSON Input
 class PropertyData(BaseModel):
     asset_name: str = Field(..., description="Name or address of the asset")
     purchase_price: float = Field(..., gt=0)
@@ -23,7 +23,7 @@ class PropertyData(BaseModel):
     is_contrarian_play: bool = Field(default=False)
     systematic_model: bool = Field(default=False)
 
-# The Core Matrix
+# 3. The Core Matrix Engine
 class HighValueInvestorGem:
     def __init__(self, investor_profile: str = "Presidential Aggressive"):
         self.profile = investor_profile
@@ -38,36 +38,43 @@ class HighValueInvestorGem:
         }
 
     def evaluate_asset(self, data: PropertyData) -> Dict[str, Any]:
-        debt_principal = data.purchase_price - data.down_payment
+        price = data.purchase_price
+        intrinsic_value = data.intrinsic_value
+        down_payment = data.down_payment
+        debt_principal = price - down_payment
+        
         friction_factor = data.project_complexity_score / 10.0
-        bad_case_impact = 1 - (friction_factor * 0.20)
+        bad_case_impact = 1 - (friction_factor * 0.20) 
         
         gross_annual_income = (data.monthly_gross_income * 12) * bad_case_impact
         annual_expenses = data.monthly_expenses * 12
         annual_debt_service = debt_principal * data.debt_interest_rate
         net_cash_flow = (gross_annual_income - annual_expenses) - annual_debt_service
         
-        cash_on_cash_return = (net_cash_flow / data.down_payment) if data.down_payment > 0 else 0.0
+        cash_on_cash_return = (net_cash_flow / down_payment) if down_payment > 0 else 0.0
         kiyosaki_score = ((cash_on_cash_return * 10) * data.depreciation_benefit_multiplier)
         
-        if data.purchase_price <= (data.intrinsic_value * 0.8):
+        if price <= (intrinsic_value * 0.8):
             kiyosaki_score *= self.heuristics["Buffett_Margin_Safety"]
         if data.sector_expertise:
             kiyosaki_score *= self.heuristics["Lynch_Expertise"]
             
         kiyosaki_score = max(0.0, min(10.0, kiyosaki_score))
+
         schwab_score = (data.market_liquidity_score * 0.4) + (data.expected_annual_appreciation * 100) - (friction_factor * 2)
         
         if data.is_contrarian_play:
             schwab_score *= self.heuristics["Templeton_Contrarian"]
             
         schwab_score = max(0.0, min(10.0, schwab_score))
+
         hvii = (kiyosaki_score * self.kiyosaki_weight) + (schwab_score * self.schwab_weight)
         
         if data.systematic_model:
             hvii *= self.heuristics["Dalio_Systematic"]
             
         hvii = max(0.0, min(10.0, hvii))
+        
         verdict = "STRONG ACQUISITION TARGET" if hvii >= 7.5 else "HOLD / CONDITIONAL" if hvii >= 5.0 else "LIQUIDITY DRAIN"
         
         return {
@@ -80,7 +87,7 @@ class HighValueInvestorGem:
 
 gem_engine = HighValueInvestorGem()
 
-# API Endpoints
+# 4. Routing the Web Traffic
 @app.get("/")
 def root():
     return {"status": "online", "system": "Apex HVII Engine"}
