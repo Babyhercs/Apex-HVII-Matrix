@@ -4,85 +4,13 @@ from typing import Dict, Any
 import streamlit as st
 import plotly.express as px
 import pandas as pd
+from datetime import datetime
 from fpdf import FPDF
 
 st.set_page_config(
     page_title="Apex Ecosystem Enterprise Portal",
     layout="wide"
 )
-
-# --- CORE UNDERWRITING ENGINE ---
-class HighValueInvestorGem:
-    def __init__(self, investor_profile: str = "Presidential Aggressive"):
-        self.profile = investor_profile
-        self.kiyosaki_weight = 0.50
-        self.schwab_weight = 0.50
-        
-        self.heuristics = {
-            "Buffett_Margin_Safety": 1.1,
-            "Soros_Macro_Stability": 1.05,
-            "Lynch_Expertise": 1.1,
-            "Templeton_Contrarian": 1.05,
-            "Dalio_Systematic": 1.05
-        }
-
-    def evaluate_asset(self, asset_metadata: Dict[str, Any]) -> Dict[str, Any]:
-        price = asset_metadata.get("purchase_price", 0.0)
-        intrinsic_value = asset_metadata.get("intrinsic_value", price) 
-        down_payment = asset_metadata.get("down_payment", price)
-        debt_principal = price - down_payment
-        
-        friction_factor = asset_metadata.get("project_complexity_score", 5.0) / 10.0
-        bad_case_impact = 1 - (friction_factor * 0.20) 
-        
-        gross_annual_income = (asset_metadata.get("monthly_gross_income", 0.0) * 12) * bad_case_impact
-        annual_expenses = asset_metadata.get("monthly_expenses", 0.0) * 12
-        annual_debt_service = debt_principal * asset_metadata.get("debt_interest_rate", 0.0)
-        net_cash_flow = (gross_annual_income - annual_expenses) - annual_debt_service
-        
-        tax_shield = asset_metadata.get("depreciation_benefit_multiplier", 1.0)
-        
-        cash_on_cash_return = (net_cash_flow / down_payment) if down_payment > 0 else 0.0
-        kiyosaki_score = ((cash_on_cash_return * 10) * tax_shield)
-        
-        if price <= (intrinsic_value * 0.8):
-            kiyosaki_score *= self.heuristics["Buffett_Margin_Safety"]
-        if asset_metadata.get("sector_expertise", False):
-            kiyosaki_score *= self.heuristics["Lynch_Expertise"]
-            
-        kiyosaki_score = max(0.0, min(10.0, kiyosaki_score))
-
-        liquidity = asset_metadata.get("market_liquidity_score", 5.0)
-        appreciation = asset_metadata.get("expected_annual_appreciation", 0.0)
-        schwab_score = (liquidity * 0.4) + (appreciation * 100) - (friction_factor * 2)
-        
-        if asset_metadata.get("stable_macro_zone", True):
-            schwab_score *= self.heuristics["Soros_Macro_Stability"]
-        if asset_metadata.get("is_contrarian_play", False):
-            schwab_score *= self.heuristics["Templeton_Contrarian"]
-            
-        schwab_score = max(0.0, min(10.0, schwab_score))
-
-        hvii = (kiyosaki_score * self.kiyosaki_weight) + (schwab_score * self.schwab_weight)
-        
-        if asset_metadata.get("systematic_model", False):
-            hvii *= self.heuristics["Dalio_Systematic"]
-            
-        hvii = max(0.0, min(10.0, hvii))
-        verdict = "STRONG ACQUISITION TARGET" if hvii >= 7.5 else "HOLD / CONDITIONAL" if hvii >= 5.0 else "LIQUIDITY DRAIN"
-        
-        return {
-            "asset_name": asset_metadata.get("asset_name"),
-            "purchase_price": price,
-            "intrinsic_value": intrinsic_value,
-            "down_payment": down_payment,
-            "debt_interest_rate": asset_metadata.get("debt_interest_rate"),
-            "expected_annual_appreciation": appreciation,
-            "hvii_index": round(hvii, 2),
-            "stress_tested_cash_flow": round(net_cash_flow, 2),
-            "verdict": verdict,
-            "risk_profile": "High Friction/High Reward" if friction_factor > 0.7 else "Efficient/Stable"
-        }
 
 # --- CUSTOM EXECUTIVE CSS INJECTION ---
 st.markdown("""
@@ -132,6 +60,15 @@ if app_choice == "🏢 Commercial Real Estate (HVII Matrix)":
     st.title("🏢 Apex Development: Commercial Real Estate Underwriting")
     st.markdown("Institutional underwriting, sensitivity modeling, and executive reporting.")
     
+    with st.expander("📋 Property Evaluation Checklist & Guide"):
+        st.markdown("""
+        - **Phase 1: Valuation & Capital Structure**: Verify purchase price $\le 80\%$ of intrinsic appraised value.
+        - **Phase 2: Income & Debt**: Audit gross rent rolls, operating expenses, and debt service.
+        - **Phase 3: Risk & Friction**: Assign market liquidity (1-10) and project complexity (1-10) scores.
+        - **Phase 4: Heuristics**: Apply Buffett, Lynch, Templeton, and Dalio multiplier overrides.
+        - **Phase 5: Verdict**: Target HVII Composite Index Score $\ge 7.5 / 10$.
+        """)
+
     col1, col2 = st.columns(2)
     with col1:
         asset_name = st.text_input("Asset Name / Description", "Industrial Warehouse Expansion & Structural Refit")
@@ -153,6 +90,7 @@ if app_choice == "🏢 Commercial Real Estate (HVII Matrix)":
         systematic = st.checkbox("Systematic Model Bonus (Dalio)", value=True)
 
     if st.button("Run HVII Evaluation & Sensitivity Analysis", type="primary"):
+        from matrix import HighValueInvestorGem
         engine = HighValueInvestorGem()
         payload = {
             "asset_name": asset_name,
@@ -224,10 +162,9 @@ if app_choice == "🏢 Commercial Real Estate (HVII Matrix)":
             pdf.set_font("Arial", "B", 16)
             pdf.cell(200, 10, txt="Apex Development: Executive Underwriting Memo", ln=True, align="C")
             pdf.set_font("Arial", "", 10)
-            pdf.cell(200, 8, txt="Complete Asset Evaluation, Cash Flow Projections, & Sensitivity Analysis", ln=True, align="C")
+            pdf.cell(200, 8, txt=f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True, align="C")
             pdf.ln(5)
             
-            # Section 1: Evaluation Metrics & Verdict
             pdf.set_font("Arial", "B", 12)
             pdf.cell(200, 8, txt="1. Core Underwriting Results", ln=True)
             pdf.set_font("Arial", "", 10)
@@ -236,7 +173,6 @@ if app_choice == "🏢 Commercial Real Estate (HVII Matrix)":
                 pdf.cell(200, 6, txt=f" - {k.replace('_', ' ').title()}: {v}", ln=True)
             pdf.ln(5)
 
-            # Section 2: 10-Year Cash Flow Projections
             pdf.set_font("Arial", "B", 12)
             pdf.cell(200, 8, txt="2. 10-Year Cumulative Cash Flow Projections", ln=True)
             pdf.set_font("Arial", "", 10)
@@ -247,7 +183,6 @@ if app_choice == "🏢 Commercial Real Estate (HVII Matrix)":
                 pdf.cell(200, 5, txt=f" Year {y}: ${cum_val:,.2f}", ln=True)
             pdf.ln(5)
 
-            # Section 3: Interest Rate Sensitivity Matrix
             pdf.set_font("Arial", "B", 12)
             pdf.cell(200, 8, txt="3. Interest Rate Sensitivity Matrix", ln=True)
             pdf.set_font("Arial", "", 10)
