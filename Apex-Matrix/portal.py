@@ -10,6 +10,7 @@ st.set_page_config(
 st.sidebar.title("Apex Portal Access")
 license_key = st.sidebar.text_input("Enter Gumroad License Key", type="password")
 
+# Administrative gate checking environment or fallback key
 VALID_ACCESS = (license_key == "sk_apex_live_12345")
 
 if not VALID_ACCESS and license_key:
@@ -17,7 +18,7 @@ if not VALID_ACCESS and license_key:
 
 if not VALID_ACCESS:
     st.title("⚡ Apex Ecosystem Portal")
-    st.warning("🔒 Please enter your active Apex Suite license key (`sk_apex_live_12345`) in the sidebar to access enterprise tools.")
+    st.warning("🔒 Please enter your active Apex Suite license key in the sidebar to access enterprise tools.")
     st.stop()
 
 st.sidebar.success("✅ Authorized Apex Member")
@@ -26,7 +27,7 @@ st.sidebar.success("✅ Authorized Apex Member")
 app_choice = st.sidebar.selectbox(
     "Select Apex Module",
     [
-        "🏢 Commercial Real Estate (HVII Matrix)", 
+        "🏢 Commercial Real Estate (Apex Development)", 
         "🔥 Structural Welding & Metal Fabrication", 
         "🪵 Custom Carpentry & Stage Builds",
         "📈 TradingView / FXIFY Prop Bot",
@@ -37,9 +38,9 @@ app_choice = st.sidebar.selectbox(
 # =====================================================================
 # 1. COMMERCIAL REAL ESTATE MODULE
 # =====================================================================
-if app_choice == "🏢 Commercial Real Estate (HVII Matrix)":
+if app_choice == "🏢 Commercial Real Estate (Apex Development)":
     st.title("🏢 Apex Development: Commercial Real Estate Underwriting")
-    st.markdown("Evaluates property underwriting, debt service, and cash flow via the Presidential HVII Matrix.")
+    st.markdown("Evaluates property underwriting, debt service, and cash flow via the HVII Matrix.")
     
     with st.expander("💡 Click here for guidance on underwriting metrics"):
         st.write("""
@@ -129,23 +130,16 @@ elif app_choice == "🔥 Structural Welding & Metal Fabrication":
         m1.metric("Total Job Cost", f"${total_cost:,.2f}")
         m2.metric("Gross Profit", f"${gross_profit:,.2f}")
         m3.metric("Profit Margin", f"{margin * 100:.1f}%")
-        
-        if margin >= 0.4:
-            st.info("🟢 **High-Margin Contract**: Exceeds commercial threshold targets.")
-        elif margin >= 0.2:
-            st.warning("🟡 **Standard Margin**: Acceptable operational yield.")
-        else:
-            st.error("🔴 **Low Margin / High Risk**: Re-evaluate pricing or labor estimates.")
 
 # =====================================================================
-# 3. CUSTOM CARPENTRY & STAGE BUILDS MODULE
+# 3. CUSTOM CARPENTRY MODULE
 # =====================================================================
 elif app_choice == "🪵 Custom Carpentry & Stage Builds":
     st.title("🪵 Apex Carpentry: Custom Builds & Stage Estimator")
     st.markdown("Evaluates custom material specs, build complexity, and labor turnaround.")
     
     with st.expander("💡 Stage & Carpentry Build Guidelines"):
-        st.write("Designed for specialized builds (e.g., 16x24 modular stages, custom cabinetry, exotic fish tank cabinetry). Automatically accounts for waste factor and build complexity.")
+        st.write("Designed for specialized builds (e.g., 16x24 modular stages, custom cabinetry). Automatically accounts for waste factor and build complexity.")
 
     c_col1, c_col2 = st.columns(2)
     with c_col1:
@@ -157,7 +151,7 @@ elif app_choice == "🪵 Custom Carpentry & Stage Builds":
         assembly_hours = st.number_input("Estimated Assembly & Finishing Hours", value=32.0, step=4.0)
 
     if st.button("Compute Build Metrics", type="primary"):
-        total_material = (lumber_sheets * sheet_cost * 1.15) + hardware_cost  # 15% waste factor included
+        total_material = (lumber_sheets * sheet_cost * 1.15) + hardware_cost
         labor_cost = assembly_hours * 65.0
         total_build_cost = total_material + labor_cost
         
@@ -175,7 +169,7 @@ elif app_choice == "📈 TradingView / FXIFY Prop Bot":
     st.markdown("Monitors automated trade signal execution logs and prop account performance.")
     
     with st.expander("💡 Webhook & Prop Bot Instructions"):
-        st.write("Point your TradingView alert webhooks to `https://your-domain.onrender.com/api/v1/webhook` to execute automated trades across FXIFY, FTMO, and DXTrade accounts.")
+        st.write("Point your TradingView alert webhooks to your Render backend endpoint to execute automated trades across FXIFY, FTMO, and DXTrade accounts.")
 
     st.metric("Engine Status", "ONLINE & LISTENING")
     st.metric("Active Strategy", "FXIFY Institutional Trend Engine V15.9")
@@ -196,15 +190,17 @@ elif app_choice == "❓ How Everything Works (Guide)":
     
     st.markdown("""
     ### 🔑 1. Licensing & Access
-    - **Gumroad Integration**: All enterprise access is gated by active Gumroad subscriptions. When you check out on Gumroad, a unique license key is issued.
-    - **Test Access**: During development and administration, you can always use the master bypass key: `sk_apex_live_12345`.
+    - **Gumroad Integration**: All enterprise access is gated by active Gumroad subscriptions issuing unique license keys upon checkout.
     
     ### 🏢 2. Commercial Real Estate (HVII Matrix)
-    - Combines institutional real estate underwriting with legendary investor rules (Buffett margin of safety, Lynch sector expertise, Dalio systematic rules) to output a 1–10 composite score.
+    - Evaluates property underwriting, debt service, and cash flow via the Presidential HVII Matrix.
     
-    ### 🔥 3. Structural Welding & Carpentry Tools
-    - Instant margin calculators designed for trade contractors to evaluate material costs, shop hourly rates, and waste factors before submitting client bids.
+    ### 🔥 3. Structural Welding & Metal Fabrication
+    - Inputs material costs, shop hours, and bids to instantly compute job profit margins.
     
-    ### 📈 4. TradingView Webhooks
-    - Listens 24/7 on Render for automated alerts sent from TradingView Pine Script indicators, routing orders securely to institutional prop accounts.
+    ### 🪵 4. Custom Carpentry & Stage Builds
+    - Evaluates custom material specs, build complexity, and labor turnaround.
+    
+    ### 📈 5. TradingView Webhook / FXIFY Prop Bot
+    - Monitors automated trade signal execution logs and prop account performance.
     """)
