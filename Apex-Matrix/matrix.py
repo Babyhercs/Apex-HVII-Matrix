@@ -6,7 +6,7 @@ class HighValueInvestorGem:
     """
     Presidential-Tier Analysis Engine: Evaluates assets via enterprise-grade 
     risk assessment, tax-efficiency modeling, project friction variables, 
-    Monte Carlo probability stress-testing, and institutional DSCR/Cap Rate metrics.
+    Monte Carlo probability stress-testing, DSCR, Cap Rate, and 5-Year DCF IRR modeling.
     """
     
     def __init__(self, investor_profile: str = "Presidential Aggressive"):
@@ -34,19 +34,25 @@ class HighValueInvestorGem:
         gross_annual_income = (asset_metadata.get("monthly_gross_income", 0.0) * 12) * bad_case_impact
         annual_expenses = asset_metadata.get("monthly_expenses", 0.0) * 12
         
-        # Net Operating Income (NOI)
         noi = gross_annual_income - annual_expenses
-        
-        # Annual Debt Service & DSCR
         annual_debt_service = debt_principal * asset_metadata.get("debt_interest_rate", 0.0)
         net_cash_flow = noi - annual_debt_service
         dscr = (noi / annual_debt_service) if annual_debt_service > 0 else 99.9
         cap_rate = (noi / price) * 100 if price > 0 else 0.0
         
-        # Tax Efficiency Multiplier
-        tax_shield = asset_metadata.get("depreciation_benefit_multiplier", 1.0)
+        # 5-Year DCF & Equity Multiple Estimation
+        hold_period_years = 5
+        appreciation = asset_metadata.get("expected_annual_appreciation", 0.04)
+        exit_val = price * ((1 + appreciation) ** hold_period_years)
         
-        # Kiyosaki Score
+        cumulative_cash_flows = sum([net_cash_flow * ((1.025) ** y) for y in range(hold_period_years)])
+        total_cash_returned = down_payment + cumulative_cash_flows + (exit_val - debt_principal)
+        equity_multiple = total_cash_returned / down_payment if down_payment > 0 else 0.0
+        
+        # Approximate IRR calculation based on equity multiple and hold period
+        approx_irr = ((equity_multiple ** (1 / hold_period_years)) - 1) * 100
+
+        tax_shield = asset_metadata.get("depreciation_benefit_multiplier", 1.0)
         cash_on_cash_return = (net_cash_flow / down_payment) if down_payment > 0 else 0.0
         kiyosaki_score = ((cash_on_cash_return * 10) * tax_shield)
         
@@ -57,9 +63,7 @@ class HighValueInvestorGem:
             
         kiyosaki_score = max(0.0, min(10.0, kiyosaki_score))
 
-        # Schwab Score
         liquidity = asset_metadata.get("market_liquidity_score", 5.0)
-        appreciation = asset_metadata.get("expected_annual_appreciation", 0.0)
         schwab_score = (liquidity * 0.4) + (appreciation * 100) - (friction_factor * 2)
         
         if asset_metadata.get("stable_macro_zone", True):
@@ -70,7 +74,6 @@ class HighValueInvestorGem:
         schwab_score = max(0.0, min(10.0, schwab_score))
 
         hvii = (kiyosaki_score * self.kiyosaki_weight) + (schwab_score * self.schwab_weight)
-        
         if asset_metadata.get("systematic_model", False):
             hvii *= self.heuristics["Dalio_Systematic"]
             
@@ -86,7 +89,7 @@ class HighValueInvestorGem:
                 success_count += 1
         probability_of_profit = (success_count / iterations) * 100
 
-        verdict = "STRONG ACQUISITION TARGET" if hvii >= 7.5 and dscr >= 1.25 else "HOLD / CONDITIONAL" if hvii >= 5.0 else "LIQUIDITY DRAIN"
+        verdict = "STRONG ACQUISITION TARGET" if hvii >= 7.5 and dscr >= 1.25 and approx_irr >= 15.0 else "HOLD / CONDITIONAL" if hvii >= 5.0 else "LIQUIDITY DRAIN"
         
         return {
             "asset_name": asset_metadata.get("asset_name"),
@@ -94,7 +97,8 @@ class HighValueInvestorGem:
             "net_operating_income": round(noi, 2),
             "cap_rate_pct": round(cap_rate, 2),
             "dscr": round(dscr, 2),
-            "stress_tested_cash_flow": round(net_cash_flow, 2),
+            "projected_5yr_irr_pct": round(approx_irr, 2),
+            "equity_multiple": round(equity_multiple, 2),
             "monte_carlo_success_probability": f"{probability_of_profit:.1f}%",
             "verdict": verdict,
             "risk_profile": "High Friction/High Reward" if friction_factor > 0.7 else "Efficient/Stable"
@@ -121,6 +125,6 @@ if __name__ == "__main__":
     }
 
     results = gem_engine.evaluate_asset(commercial_rehab_project)
-    print("--- Running Presidential Matrix (Upgraded) ---")
+    print("--- Running Presidential Matrix (DCF & IRR Upgraded) ---")
     for k, v in results.items():
         print(f"{k.replace('_', ' ').title()}: {v}")
