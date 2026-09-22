@@ -1,5 +1,6 @@
 import os
 import math
+import random
 from typing import Dict, Any
 import streamlit as st
 import plotly.express as px
@@ -59,7 +60,6 @@ if portal_mode == "🌐 Free Public Property Intake Form":
         submitted = st.form_submit_button("Submit for Instant Feasibility Score", type="primary")
         
         if submitted:
-            # Quick preliminary evaluation score calculation
             net_mo = (pub_gross - pub_expenses) * (1 - (pub_complexity * 0.02))
             annual_net = net_mo * 12
             prelim_yield = (annual_net / pub_purchase) * 100 if pub_purchase > 0 else 0
@@ -78,7 +78,7 @@ if portal_mode == "🌐 Free Public Property Intake Form":
             st.success("✅ Feasibility Request Received! Our underwriting team will review your metrics and reach out shortly.")
             st.metric("Preliminary Net Yield Estimate", f"{prelim_yield:.2f}%")
             
-    st.stop() # Stops execution here so public users cannot access licensed modules
+    st.stop()
 
 # =====================================================================
 # MASTER AUTHENTICATION GATE FOR SUBSCRIBERS
@@ -94,8 +94,6 @@ if not VALID_ACCESS and license_key:
 if not VALID_ACCESS:
     st.title("⚡ Apex Ecosystem Portal")
     st.warning("🔒 Please enter your active Apex Suite license key in the sidebar, or switch to the Public Intake Form mode.")
-    
-    # Optional: Display submitted leads for the admin/owner to review
     if st.session_state.lead_submissions:
         st.markdown("### 📥 Recent Public Lead Submissions")
         st.dataframe(pd.DataFrame(st.session_state.lead_submissions), use_container_width=True)
@@ -119,12 +117,21 @@ app_choice = st.sidebar.selectbox(
 )
 
 # =====================================================================
-# 1. COMMERCIAL REAL ESTATE MODULE
+# 1. COMMERCIAL REAL ESTATE MODULE (UPGRADED WITH DSCR & MONTE CARLO)
 # =====================================================================
 if app_choice == "🏢 Commercial Real Estate (HVII Matrix)":
     st.title("🏢 Apex Development: Commercial Real Estate Underwriting")
-    st.markdown("Institutional underwriting, sensitivity modeling, and executive reporting.")
+    st.markdown("Institutional underwriting with DSCR, Cap Rate, Monte Carlo Risk Simulation, and Executive Reporting.")
     
+    with st.expander("📋 Property Evaluation Checklist & Guide"):
+        st.markdown("""
+        - **Phase 1: Valuation & Capital Structure**: Verify purchase price $\le 80\%$ of intrinsic appraised value.
+        - **Phase 2: Income & Debt**: Audit gross rent rolls, operating expenses, and debt service (DSCR $\ge 1.25x$).
+        - **Phase 3: Risk & Friction**: Assign market liquidity (1-10) and project complexity (1-10) scores.
+        - **Phase 4: Heuristics**: Apply Buffett, Lynch, Templeton, and Dalio multiplier overrides.
+        - **Phase 5: Verdict**: Target HVII Composite Index Score $\ge 7.5 / 10$ and positive Monte Carlo probability.
+        """)
+
     col1, col2 = st.columns(2)
     with col1:
         asset_name = st.text_input("Asset Name / Description", "Industrial Warehouse Expansion & Structural Refit")
@@ -145,7 +152,7 @@ if app_choice == "🏢 Commercial Real Estate (HVII Matrix)":
         contrarian = st.checkbox("Contrarian Play Bonus (Templeton)", value=True)
         systematic = st.checkbox("Systematic Model Bonus (Dalio)", value=True)
 
-    if st.button("Run HVII Evaluation & Sensitivity Analysis", type="primary"):
+    if st.button("Run HVII Evaluation & Monte Carlo Simulation", type="primary"):
         from matrix import HighValueInvestorGem
         engine = HighValueInvestorGem()
         payload = {
@@ -175,10 +182,13 @@ if app_choice == "🏢 Commercial Real Estate (HVII Matrix)":
         else:
             st.warning(f"Verdict: {data['verdict']}")
             
-        r1, r2, r3 = st.columns(3)
+        # Institutional Metrics Display Columns
+        r1, r2, r3, r4, r5 = st.columns(5)
         r1.metric("HVII Index Score", f"{data['hvii_index']} / 10")
-        r2.metric("Stress-Tested Cash Flow", f"${data['stress_tested_cash_flow']:,.2f} / yr")
-        r3.metric("Risk Profile", data['risk_profile'])
+        r2.metric("Net Operating Income", f"${data['net_operating_income']:,.2f} / yr")
+        r3.metric("Cap Rate", f"{data['cap_rate_pct']}%")
+        r4.metric("DSCR Ratio", f"{data['dscr']}x")
+        r5.metric("Monte Carlo Success", data['monte_carlo_success_probability'])
 
         st.markdown("### 📈 10-Year Cumulative Cash Flow Projections")
         years = list(range(1, 11))
@@ -222,7 +232,7 @@ if app_choice == "🏢 Commercial Real Estate (HVII Matrix)":
             pdf.ln(5)
             
             pdf.set_font("Arial", "B", 12)
-            pdf.cell(200, 8, txt="1. Core Underwriting Results", ln=True)
+            pdf.cell(200, 8, txt="1. Core Underwriting Results & Institutional Metrics", ln=True)
             pdf.set_font("Arial", "", 10)
             eval_data = st.session_state.last_evaluation
             for k, v in eval_data.items():
@@ -327,4 +337,4 @@ elif app_choice == "📥 View Captured Client Leads":
 # =====================================================================
 elif app_choice == "❓ How Everything Works (Guide)":
     st.title("❓ Apex Ecosystem: Master User Guide")
-    st.markdown("All enterprise modules and public lead-capture forms are unified in `app.py`.")Plotly analytics and full PDF reporting.")
+    st.markdown("All enterprise modules, DSCR metrics, Monte Carlo simulations, and public lead capture forms are unified in `app.py`.")
