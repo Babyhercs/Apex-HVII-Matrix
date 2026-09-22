@@ -3,18 +3,16 @@ import requests
 
 st.set_page_config(
     page_title="Apex Ecosystem Portal",
-    page_layout="wide"
+    layout="wide"  # Corrected layout argument
 )
 
 # --- MASTER AUTHENTICATION GATE ---
 st.sidebar.title("Apex Portal Access")
 license_key = st.sidebar.text_input("Enter Gumroad License Key", type="password")
 
-# Master testing backdoor for administration
 VALID_ACCESS = (license_key == "sk_apex_live_12345")
 
 if not VALID_ACCESS and license_key:
-    # Optional: Verify against Gumroad API here if desired
     st.sidebar.error("Invalid License Key.")
 
 if not VALID_ACCESS:
@@ -74,7 +72,7 @@ if app_choice == "HVII Real Estate Matrix":
         }
         headers = {"X-Apex-API-Key": license_key}
         try:
-            res = requests.post("https://apex-hvii-matrix.onrender.com/api/v1/evaluate", json=payload, headers=headers)
+            res = requests.post("http://127.0.0.1:8000/api/v1/evaluate", json=payload, headers=headers)
             if res.status_code == 200:
                 data = res.json()
                 st.success(f"Verdict: {data['verdict']}")
@@ -87,16 +85,12 @@ if app_choice == "HVII Real Estate Matrix":
 
 elif app_choice == "TradingView Webhook Bot":
     st.title("📈 Apex Automated Execution Bot")
-    st.markdown("Live status monitor for TradingView Webhook triggers and prop firm routing.")
-    st.info("Webhook Listener URL: `https://apex-hvii-matrix.onrender.com/api/v1/webhook`")
+    st.markdown("Live status monitor for TradingView Webhook triggers.")
     st.metric("Bot Status", "ONLINE & LISTENING")
-    st.metric("Active Routing", "FXIFY / DXTrade Institutional Engine V15.9")
 
 elif app_choice == "Apex Project Pipeline":
     st.title("🛠️ Apex Developmental Services Pipeline")
-    st.markdown("Active Dallas-Fort Worth construction, welding, and real estate portfolio tracker.")
     st.table([
         {"Project": "Industrial Warehouse Expansion", "Sector": "Commercial Real Estate", "Status": "Underwriting Complete"},
-        {"Project": "Structural Steel Retrofit", "Sector": "Welding & Fabrication", "Status": "In Execution"},
-        {"Project": "Modular Stage Blueprint", "Sector": "Custom Carpentry", "Status": "Fabrication Ready"}
+        {"Project": "Structural Steel Retrofit", "Sector": "Welding & Fabrication", "Status": "In Execution"}
     ])
