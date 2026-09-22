@@ -14,6 +14,7 @@ st.set_page_config(
     layout="wide"
 )
 
+# --- CUSTOM EXECUTIVE CSS INJECTION ---
 st.markdown("""
 <style>
     .main { background-color: #0e1117; color: #ffffff; }
@@ -23,6 +24,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# --- NAVIGATION HUB ---
 st.sidebar.title("Apex Portal Access")
 portal_mode = st.sidebar.radio("Select Portal Mode", ["🔒 Subscriber Enterprise Portal", "🌐 Free Public Property Intake Form"])
 
@@ -327,4 +329,4 @@ elif app_choice == "📥 View Captured Client Leads":
 # =====================================================================
 elif app_choice == "❓ How Everything Works (Guide)":
     st.title("❓ Apex Ecosystem: Master User Guide")
-    st.markdown("All institutional underwriting engines, IRR modeling, Monte Carlo simulations, and CRM lead capture forms are unified in `app.py`.")
+    st.markdown("All institutional underwriting engines, IRR modeling, Monte Carlo simulations, and CRM lead capture forms are unified in `app.py` and powered by `matrix.py`.")
