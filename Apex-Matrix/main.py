@@ -1,0 +1,95 @@
+from fastapi import FastAPI, Depends, HTTPException, Security
+from fastapi.security.api_key import APIKeyHeader
+from pydantic import BaseModel, Field
+from typing import Dict, Any
+
+# --- SECURITY (API KEY SETUP) ---
+API_KEY = "sk_apex_live_12345" # In production, load this from an .env file
+API_KEY_NAME = "X-Apex-API-Key"
+api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+
+async def get_api_key(api_key_header: str = Security(api_key_header)):
+    if api_key_header == API_KEY:
+        return api_key_header
+    raise HTTPException(status_code=403, detail="Invalid or missing API Key")
+
+# --- DATA VALIDATION MODELS ---
+class PropertyData(BaseModel):
+    asset_name: str = Field(..., description="Name or address of the asset")
+    purchase_price: float = Field(..., gt=0, description="Total acquisition cost")
+    intrinsic_value: float = Field(..., gt=0)
+    down_payment: float = Field(..., ge=0)
+    monthly_gross_income: float = Field(..., ge=0)
+    monthly_expenses: float = Field(..., ge=0)
+    debt_interest_rate: float = Field(..., ge=0, le=1)
+    expected_annual_appreciation: float = Field(..., ge=0, le=1)
+    market_liquidity_score: float = Field(..., ge=1, le=10)
+    project_complexity_score: float = Field(..., ge=1, le=10)
+    depreciation_benefit_multiplier: float = Field(default=1.0)
+    sector_expertise: bool = Field(default=False)
+    is_contrarian_play: bool = Field(default=False)
+    systematic_model: bool = Field(default=False)
+
+# --- THE APEX ENGINE ---
+class HighValueInvestorGem:
+    def __init__(self, investor_profile: str = "Presidential Aggressive"):
+        self.profile = investor_profile
+        self.kiyosaki_weight = 0.50
+        self.schwab_weight = 0.50
+        self.heuristics = {
+            "Buffett_Margin_Safety": 1.1,
+            "Soros_Macro_Stability": 1.05,
+            "Lynch_Expertise": 1.1,
+            "Templeton_Contrarian": 1.05,
+            "Dalio_Systematic": 1.05
+        }
+
+    def evaluate_asset(self, data: PropertyData) -> Dict[str, Any]:
+        debt_principal = data.purchase_price - data.down_payment
+        friction_factor = data.project_complexity_score / 10.0
+        bad_case_impact = 1 - (friction_factor * 0.20) 
+        
+        gross_annual_income = (data.monthly_gross_income * 12) * bad_case_impact
+        annual_expenses = data.monthly_expenses * 12
+        annual_debt_service = debt_principal * data.debt_interest_rate
+        net_cash_flow = (gross_annual_income - annual_expenses) - annual_debt_service
+        
+        cash_on_cash_return = (net_cash_flow / data.down_payment) if data.down_payment > 0 else 0.0
+        kiyosaki_score = ((cash_on_cash_return * 10) * data.depreciation_benefit_multiplier)
+        
+        if data.purchase_price <= (data.intrinsic_value * 0.8):
+            kiyosaki_score *= self.heuristics["Buffett_Margin_Safety"]
+        if data.sector_expertise:
+            kiyosaki_score *= self.heuristics["Lynch_Expertise"]
+            
+        kiyosaki_score = max(0.0, min(10.0, kiyosaki_score))
+        schwab_score = (data.market_liquidity_score * 0.4) + (data.expected_annual_appreciation * 100) - (friction_factor * 2)
+        
+        if data.is_contrarian_play:
+            schwab_score *= self.heuristics["Templeton_Contrarian"]
+            
+        schwab_score = max(0.0, min(10.0, schwab_score))
+        hvii = (kiyosaki_score * self.kiyosaki_weight) + (schwab_score * self.schwab_weight)
+        
+        if data.systematic_model:
+            hvii *= self.heuristics["Dalio_Systematic"]
+            
+        hvii = max(0.0, min(10.0, hvii))
+        verdict = "STRONG ACQUISITION TARGET" if hvii >= 7.5 else "HOLD / CONDITIONAL" if hvii >= 5.0 else "LIQUIDITY DRAIN"
+        
+        return {
+            "asset_name": data.asset_name,
+            "hvii_index": round(hvii, 2),
+            "stress_tested_annual_cash_flow": round(net_cash_flow, 2),
+            "cash_on_cash_return_pct": round(cash_on_cash_return * 100, 2),
+            "verdict": verdict,
+            "risk_profile": "High Friction/High Reward" if friction_factor > 0.7 else "Efficient/Stable"
+        }
+
+# --- SERVER INIT ---
+app = FastAPI(title="Apex HVII Property Matrix API")
+engine = HighValueInvestorGem()
+
+@app.post("/api/v1/evaluate")
+async def evaluate_property(data: PropertyData, api_key: str = Depends(get_api_key)):
+    return engine.evaluate_asset(data)
